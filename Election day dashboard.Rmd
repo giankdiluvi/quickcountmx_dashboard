@@ -1,0 +1,1548 @@
+---
+title: "Conteo Rápido de las Elecciones Presidenciales de 2018"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: cosmo
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+
+# Preamble ####
+library(flexdashboard)
+library(shiny)
+library(shinyWidgets)
+library(tidyverse)
+library(DT)
+library(miniUI)
+library(knitr)
+library(kableExtra)
+library(plotly)
+
+theme_set(theme_bw())
+colores <- c("JHRC" = "#5D2B74",
+             "AMLO" = "#A23124",
+             "JAMK" = "#E92530",
+             "RAC" = "#0A599A",
+             "PART" = "Green")
+# Set common data table options
+options(DT.options = list(pageLength = 1000))
+
+
+# Funciones auxiliares ####
+# Función para imprimir porcentajes en múltiplos de 100
+porcentaje <- function(x, digits=1){
+  return(paste0(round(x, digits = digits), "%"))
+} 
+
+
+
+# Función para imprimir porcentajes en múltiplos de 100
+porcentaje_small <- function(x, digits=1){
+  return(paste0(round(100*x, digits = digits), "%"))
+} 
+
+
+
+# Función para imprimir la hora
+format_hora <- function(x){
+  # x es un caracter de cuatro digitos en formato
+  # hhmm. Regresa hh:mm como caracter
+  if(nchar(x)!= 4){
+    return(x) 
+  }else{
+    hh <- substr(x, start = 1, stop = 2)
+    mm <- substr(x, start = 3, stop = 4)
+    hora <- paste0(hh, ":", mm)
+    return(hora)
+  }
+}
+
+
+# Función para imprimir la fecha
+format_fecha <- function(x){
+  # x es un caracter de seis digitos en formato
+  # ddhhmm. Regresa dd/07 hh:mm como caracter
+  if(nchar(x)!= 6){
+    return(x) 
+  }else{
+    dd <- substr(x, start = 1, stop = 2)
+    hh <- substr(x, start = 3, stop = 4)
+    mm <- substr(x, start = 5, stop = 6)
+    hora <- paste0(dd, "/07 ", hh, ":", mm)
+    return(hora)
+  }
+}
+
+
+# archivos <- c("compulsadofederal",
+#               "equipoa",
+#               "equipob",
+#               "equipoc",
+#               "mendoza",
+#               "nieto")
+
+# Lee archivos históricos
+compulsadofederal <- readr::read_csv("Historicos/compulsadofederal.csv",
+                                     col_types = "cccddd")
+equipoa <- readr::read_csv("Historicos/equipoa.csv",
+                                     col_types = "cccddd")
+equipob <- readr::read_csv("Historicos/equipob.csv",
+                                     col_types = "cccddd")
+equipoc <- readr::read_csv("Historicos/equipoc.csv",
+                                     col_types = "cccddd")
+anzarut <- readr::read_csv("Historicos/anzarut.csv",
+                                     col_types = "cccddd")
+mendoza <- readr::read_csv("Historicos/mendoza.csv",
+                                     col_types = "cccddd")
+nieto <- readr::read_csv("Historicos/nieto.csv",
+                                     col_types = "cccddd")
+remesas <- readr::read_csv("Historicos/remesas.csv",
+                           col_types = "ccciii")
+
+
+
+
+
+# Determina horas disponibles por equipo ####
+
+
+
+# COTECORA federal
+  horas.federal <- compulsadofederal %>% 
+    dplyr::select(dia, hora) %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::select(fecha) %>% 
+    dplyr::distinct() %>% 
+    dplyr::pull()
+  
+  input.federal <- horas.federal
+  for(i in 1:length(horas.federal)){
+    input.federal[i] <- format_fecha(input.federal[i])
+  }
+  
+  
+# equipoa
+  horas.equipoa <- equipoa %>% 
+    dplyr::select(dia, hora) %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::select(fecha) %>% 
+    dplyr::distinct() %>% 
+    dplyr::pull()
+  
+  input.equipoa <- horas.equipoa
+  for(i in 1:length(horas.equipoa)){
+    input.equipoa[i] <- format_fecha(input.equipoa[i])
+  }
+  
+
+  
+  
+  
+# equipob
+  horas.equipob <- equipob %>% 
+    dplyr::select(dia, hora) %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::select(fecha) %>% 
+    dplyr::distinct() %>% 
+    dplyr::pull()
+  
+  input.equipob <- horas.equipob
+  for(i in 1:length(horas.equipob)){
+    input.equipob[i] <- format_fecha(input.equipob[i])
+  }
+  
+  
+  
+# equipoc
+  horas.equipoc <- equipoc %>% 
+    dplyr::select(dia, hora) %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::select(fecha) %>% 
+    dplyr::distinct() %>% 
+    dplyr::pull()
+  
+  input.equipoc <- horas.equipoc
+  for(i in 1:length(horas.equipoc)){
+    input.equipoc[i] <- format_fecha(input.equipoc[i])
+  }
+  
+
+  
+  
+# anzarut
+  horas.anzarut <- anzarut %>% 
+    dplyr::select(dia, hora) %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::select(fecha) %>% 
+    dplyr::distinct() %>% 
+    dplyr::pull()
+  
+  input.anzarut <- horas.anzarut
+  for(i in 1:length(horas.anzarut)){
+    input.anzarut[i] <- format_fecha(input.anzarut[i])
+  }
+  
+  
+  
+# mendoza
+  horas.mendoza <- mendoza %>% 
+    dplyr::select(dia, hora) %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::select(fecha) %>% 
+    dplyr::distinct() %>% 
+    dplyr::pull()
+  
+  input.mendoza <- horas.mendoza
+  for(i in 1:length(horas.mendoza)){
+    input.mendoza[i] <- format_fecha(input.mendoza[i])
+  }
+
+  
+# nieto
+  horas.nieto <- nieto %>% 
+    dplyr::select(dia, hora) %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::select(fecha) %>% 
+    dplyr::distinct() %>% 
+    dplyr::pull()
+  
+  input.nieto <- horas.nieto
+  for(i in 1:length(horas.nieto)){
+    input.nieto[i] <- format_fecha(input.nieto[i])
+  }
+  
+  
+  
+# remesas
+  horas.remesas <- remesas %>%  
+    dplyr::select(dia, hora) %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::select(fecha) %>% 
+    dplyr::distinct() %>% 
+    dplyr::pull()
+  
+  input.remesas <- horas.remesas
+  for(i in 1:length(horas.remesas)){
+    input.remesas[i] <- format_fecha(input.remesas[i])
+  }
+
+
+```
+
+<!-- Introducción {data-orientation=rows} -->
+<!-- ===================================== -->
+
+
+
+<!-- Row -->
+<!-- ------------------------------------- -->
+
+<!-- ### <font size="+3"> **Análisis de las estimaciones del COTECORA para las elecciones presidenciales de 2018** </font> {data-height=300} -->
+
+
+
+<!-- ```{r logo} -->
+
+<!-- renderImage({ -->
+
+<!--   filename <- normalizePath(file.path("./Logos/Logo.png")) -->
+
+<!--   list(src = filename, -->
+<!--        width = 756, -->
+<!--        height = 157) -->
+
+<!-- }, deleteFile = FALSE) -->
+
+
+
+
+<!-- ``` -->
+
+
+<!-- Row -->
+<!-- ------------------------------------- -->
+
+
+<!-- ### {data-height=1400} -->
+
+<!-- Fecha: agosto de 2018 -->
+
+<!-- <br> -->
+<!-- <br> -->
+
+<!-- Mauel Mendoza Ramírez -->
+
+
+
+
+
+
+
+
+
+
+
+
+COTECORA
+=====================================
+
+
+Column {.sidebar}
+-------------------------------------
+
+
+Selecciona la hora de la remesa para visualizar la estimación correspondiente
+
+
+```{r input.remesa.cotecora}
+
+
+sliderTextInput("remesa.cotecora", label = "Remesa:",
+                choices = input.federal,
+                selected = input.federal[2],
+                animate = animationOptions(interval = 1000,
+                                           loop = FALSE,
+                                           playButton = "Play",
+                                           pauseButton = "Pause"))
+
+
+# Obtén datos de la remesa en cuestión
+# casillas <- isolate({
+#   remesas %>% 
+#   dplyr::filter(date == input$remesa.cotecora) %>% 
+#   dplyr::select(num.casillas) %>% 
+#   dplyr::pull() %>% 
+#   as.integer() }) %>% 
+#   get()
+
+```
+
+
+
+<br>
+<br>
+
+Integrantes del COTECORA:
+
+ - Dr. Alberto Alonso y Coria
+ 
+ - Dra. Michelle Anzarut Chacalo
+ 
+ - Dr. Carlos Hernández Garciadiego
+ 
+ - Dr. Manuel Mendoza Ramírez
+ 
+ - Dr. Luis Enrique Nieto Barajas
+ 
+ - Dr. Gabriel Núñez Antonio
+ 
+ - Dr. Carlos Erwin Rodríguez Hernández-Vela
+ 
+ - Mtra. Patricia Isabel Romero Mares
+ 
+ - Dr. Raúl Rueda Díaz del Campo
+ 
+ <br>
+ 
+ Método de compulsado: media de los dos intervalos de mayor longitud
+
+
+Column {.tabset}
+-------------------------------------
+
+
+
+
+
+### Evolución de las estimaciones por candidato
+
+
+
+
+```{r cotecora.graph.candidatos}
+
+
+miniContentPanel(
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.federal,
+                input = input.federal)
+hora.selec <- input$remesa.cotecora
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- compulsadofederal %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido != "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    fill = partido,
+                    group = partido),
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  color = partido,
+                  group = partido),
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la votación",
+         fill = "Candidato",
+         color = "Candidato") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 60)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+}), scrollable = TRUE)
+
+```
+
+
+
+### Evolución de la estimación de la participación
+
+```{r cotecora.graph.participacion}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.federal,
+                input = input.federal)
+hora.selec <- input$remesa.cotecora
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- compulsadofederal %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido == "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    group = partido),
+                fill = "Green",
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  group = partido),
+              color = "Green",
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la participación") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 100)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+
+
+Equipo A
+=====================================
+
+
+Column {.sidebar}
+-------------------------------------
+
+
+Selecciona la hora de la remesa para visualizar la estimación correspondiente
+
+
+```{r input.remesa.equipoa}
+
+
+sliderTextInput("remesa.equipoa", label = "Remesa:",
+                choices = input.equipoa,
+                selected = input.equipoa[2],
+                animate = animationOptions(interval = 1000,
+                                           loop = FALSE,
+                                           playButton = "Play",
+                                           pauseButton = "Pause"))
+
+
+```
+
+
+
+<br>
+<br>
+
+Integrantes del Equipo A:
+ 
+ - Dra. Michelle Anzarut Chacalo
+ 
+ - Dr. Manuel Mendoza Ramírez
+ 
+ - Dr. Luis Enrique Nieto Barajas
+ 
+ <br>
+ 
+ Método de compulsado: unión de los dos intervalos de menor longitud
+
+Column {.tabset}
+-------------------------------------
+
+
+
+
+
+### Evolución de las estimaciones por candidato
+
+```{r equipoa.graph.candidatos}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.equipoa,
+                input = input.equipoa)
+hora.selec <- input$remesa.equipoa
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- equipoa %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido != "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    fill = partido,
+                    group = partido),
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  color = partido,
+                  group = partido),
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la votación",
+         fill = "Candidato",
+         color = "Candidato") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 60)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+### Evolución de la estimación de la participación
+
+```{r equipoa.graph.participacion}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.equipoa,
+                input = input.equipoa)
+hora.selec <- input$remesa.equipoa
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- equipoa %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido == "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    group = partido),
+                fill = "Green",
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  group = partido),
+              color = "Green",
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la participación") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 100)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+
+
+
+Equipo B
+=====================================
+
+
+Column {.sidebar}
+-------------------------------------
+
+
+Selecciona la hora de la remesa para visualizar la estimación correspondiente
+
+
+```{r input.remesa.equipob}
+
+
+sliderTextInput("remesa.equipob", label = "Remesa:",
+                choices = input.equipob,
+                selected = input.equipob[2],
+                animate = animationOptions(interval = 1000,
+                                           loop = FALSE,
+                                           playButton = "Play",
+                                           pauseButton = "Pause"))
+
+
+```
+
+
+
+<br>
+<br>
+
+Integrantes del Equipo B:
+ 
+ - Dr. Carlos Hernández Garciadiego
+ 
+ - Dr. Gabriel Núñez Antonio
+ 
+ - Dr. Carlos Erwin Rodríguez Hernández-Vela
+ 
+ <br>
+ 
+ Método de compulsado: mediana de los tres intervalos
+
+Column {.tabset}
+-------------------------------------
+
+
+
+
+
+### Evolución de las estimaciones por candidato
+
+```{r equipob.graph.candidatos}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.equipob,
+                input = input.equipob)
+hora.selec <- input$remesa.equipob
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- equipob %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido != "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    fill = partido,
+                    group = partido),
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  color = partido,
+                  group = partido),
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la votación",
+         fill = "Candidato",
+         color = "Candidato") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 60)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+### Evolución de la estimación de la participación
+
+```{r equipob.graph.participacion}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.equipob,
+                input = input.equipob)
+hora.selec <- input$remesa.equipob
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- equipob %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido == "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    group = partido),
+                fill = "Green",
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  group = partido),
+              color = "Green",
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la participación") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 100)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+Equipo C
+=====================================
+
+
+Column {.sidebar}
+-------------------------------------
+
+
+Selecciona la hora de la remesa para visualizar la estimación correspondiente
+
+
+```{r input.remesa.equipoc}
+
+
+sliderTextInput("remesa.equipoc", label = "Remesa:",
+                choices = input.equipoc,
+                selected = input.equipoc[2],
+                animate = animationOptions(interval = 1000,
+                                           loop = FALSE,
+                                           playButton = "Play",
+                                           pauseButton = "Pause"))
+
+
+```
+
+
+
+<br>
+<br>
+
+Integrantes del Equipo C:
+ 
+ - Dr. Alberto Alonso y Coria
+ 
+ - Mtra. Patricia Isabel Romero Mares
+ 
+ - Dr. Raúl Rueda Díaz del Campo
+ 
+
+
+
+Column {.tabset}
+-------------------------------------
+
+
+
+
+
+### Evolución de las estimaciones por candidato
+
+```{r equipoc.graph.candidatos}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.equipoc,
+                input = input.equipoc)
+hora.selec <- input$remesa.equipoc
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- equipoc %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido != "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    fill = partido,
+                    group = partido),
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  color = partido,
+                  group = partido),
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la votación",
+         fill = "Candidato",
+         color = "Candidato") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 62)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+### Evolución de la estimación de la participación
+
+```{r equipoc.graph.participacion}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.equipoc,
+                input = input.equipoc)
+hora.selec <- input$remesa.equipoc
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- equipoc %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido == "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    group = partido),
+                fill = "Green",
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  group = partido),
+              color = "Green",
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la participación") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 120)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+
+Anzarut
+=====================================
+
+
+Column {.sidebar}
+-------------------------------------
+
+Estimaciones producidas por la Dra. Michelle Anzarut Chacalo
+
+<br>
+
+Selecciona la hora de la remesa para visualizar la estimación correspondiente
+
+
+```{r input.remesa.anzarut}
+
+
+sliderTextInput("remesa.anzarut", label = "Remesa:",
+                choices = input.anzarut,
+                selected = input.anzarut[2],
+                animate = animationOptions(interval = 1000,
+                                           loop = FALSE,
+                                           playButton = "Play",
+                                           pauseButton = "Pause"))
+
+
+```
+
+
+
+
+
+
+
+Column {.tabset}
+-------------------------------------
+
+
+
+
+
+### Evolución de las estimaciones por candidato
+
+```{r anzarut.graph.candidatos}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.anzarut,
+                input = input.anzarut)
+hora.selec <- input$remesa.anzarut
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- anzarut %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido != "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    fill = partido,
+                    group = partido),
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  color = partido,
+                  group = partido),
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la votación",
+         fill = "Candidato",
+         color = "Candidato") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 62)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+### Evolución de la estimación de la participación
+
+```{r anzarut.graph.participacion}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.anzarut,
+                input = input.anzarut)
+hora.selec <- input$remesa.anzarut
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- anzarut %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido == "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    group = partido),
+                fill = "Green",
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  group = partido),
+              color = "Green",
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la participación") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 100)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+
+
+
+
+
+
+
+
+Mendoza
+=====================================
+
+
+Column {.sidebar}
+-------------------------------------
+
+Estimaciones producidas por el Dr. Manuel Mendoza Ramírez
+
+<br>
+
+Selecciona la hora de la remesa para visualizar la estimación correspondiente
+
+
+```{r input.remesa.mendoza}
+
+
+sliderTextInput("remesa.mendoza", label = "Remesa:",
+                choices = input.mendoza,
+                selected = input.mendoza[2],
+                animate = animationOptions(interval = 1000,
+                                           loop = FALSE,
+                                           playButton = "Play",
+                                           pauseButton = "Pause"))
+
+
+```
+
+
+
+
+
+
+
+Column {.tabset}
+-------------------------------------
+
+
+
+
+
+### Evolución de las estimaciones por candidato
+
+```{r mendoza.graph.candidatos}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.mendoza,
+                input = input.mendoza)
+hora.selec <- input$remesa.mendoza
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- mendoza %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido != "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    fill = partido,
+                    group = partido),
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  color = partido,
+                  group = partido),
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la votación",
+         fill = "Candidato",
+         color = "Candidato") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 62)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+### Evolución de la estimación de la participación
+
+```{r mendoza.graph.participacion}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.mendoza,
+                input = input.mendoza)
+hora.selec <- input$remesa.mendoza
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- mendoza %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido == "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    group = partido),
+                fill = "Green",
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  group = partido),
+              color = "Green",
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la participación") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 100)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+
+
+Nieto
+=====================================
+
+
+Column {.sidebar}
+-------------------------------------
+
+Estimaciones producidas por el Dr. Luis Enrique Nieto Barajas
+
+<br>
+
+Selecciona la hora de la remesa para visualizar la estimación correspondiente
+
+
+```{r input.remesa.nieto}
+
+
+sliderTextInput("remesa.nieto", label = "Remesa:",
+                choices = input.nieto,
+                selected = input.nieto[2],
+                animate = animationOptions(interval = 1000,
+                                           loop = FALSE,
+                                           playButton = "Play",
+                                           pauseButton = "Pause"))
+
+
+```
+
+
+
+
+
+
+
+Column {.tabset}
+-------------------------------------
+
+
+
+
+
+### Evolución de las estimaciones por candidato
+
+```{r nieto.graph.candidatos}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.nieto,
+                input = input.nieto)
+hora.selec <- input$remesa.nieto
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- nieto %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido != "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    fill = partido,
+                    group = partido),
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  color = partido,
+                  group = partido),
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la votación",
+         fill = "Candidato",
+         color = "Candidato") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 62)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+### Evolución de la estimación de la participación
+
+```{r nieto.graph.participacion}
+
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.nieto,
+                input = input.nieto)
+hora.selec <- input$remesa.nieto
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+# Genera gráfica de los candidatos
+  graph <- nieto %>% 
+    dplyr::mutate(fecha = paste0(dia, hora)) %>% 
+    dplyr::filter(partido == "PART",
+                  fecha %in% horas$hour) %>% 
+    ggplot2::ggplot() +
+    geom_ribbon(aes(x = fecha,
+                    ymin = inf,
+                    ymax = sup,
+                    group = partido),
+                fill = "Green",
+                alpha = 0.4) +
+    geom_path(aes(x = fecha,
+                  y = med,
+                  group = partido),
+              color = "Green",
+              linetype = 2) +
+    scale_color_manual(values = colores) +
+    scale_fill_manual(values = colores) +
+    labs(x = "Hora",
+         y = "Estimación de la participación") +
+    scale_y_continuous(labels = porcentaje,
+                       limits = c(0, 100)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly(graph)
+
+})
+
+```
+
+
+
+
+
+
+
+
+Llegada de la muestra
+=====================================
+
+
+Column {.sidebar}
+-------------------------------------
+
+Avance de la llegada de la muestra el día de la jornada electoral.
+
+<br>
+
+Selecciona la hora de la remesa para visualizar la información correspondiente
+
+
+```{r input.remesas}
+
+
+sliderTextInput("remesa", label = "Remesa:",
+                choices = input.remesas,
+                selected = input.remesas[2],
+                animate = animationOptions(interval = 1000,
+                                           loop = FALSE,
+                                           playButton = "Play",
+                                           pauseButton = "Pause"))
+
+
+
+
+radioButtons("tipo", label = "Porcentaje / Absoluto:",
+             choices = c("Porcentaje", "Absoluto"),
+             selected = "Porcentaje")
+
+```
+
+
+
+
+Column {.tabset}
+-------------------------------------
+
+
+
+
+
+### Número de casillas
+
+
+
+
+```{r graph.remesas.casillas}
+
+miniContentPanel(
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.remesas,
+                input = input.remesas)
+hora.selec <- input$remesa
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+if(input$tipo == "Absoluto"){
+
+graph <- remesas %>% 
+  dplyr::filter(fecha %in% horas$hour) %>% 
+  ggplot(aes(fecha, num.casillas)) + 
+  geom_bar(stat="identity") +
+    labs(x = "Hora",
+         y = "Número de remesas") +
+    scale_y_continuous(labels = scales::comma,
+                       sec.axis = sec_axis(~ ./7787, 
+                                           name = "Porcentaje de remesas",
+                                           labels = porcentaje)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+}else{
+  
+  graph <- remesas %>% 
+  dplyr::filter(fecha %in% horas$hour) %>% 
+  dplyr::mutate(num.casillas = num.casillas / 7787) %>% 
+  ggplot(aes(fecha, num.casillas)) + 
+  geom_bar(stat="identity") +
+    labs(x = "Hora",
+         y = "Porcentaje de remesas") +
+    scale_y_continuous(labels = porcentaje_small) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+}
+
+
+ggplotly(graph)
+
+
+}), scrollable = TRUE)
+
+
+```
+
+
+
+
+
+
+
+
+### Número de estratos
+
+
+
+
+```{r graph.remesas.estratos}
+
+miniContentPanel(
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.remesas,
+                input = input.remesas)
+hora.selec <- input$remesa
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+if(input$tipo == "Absoluto"){
+
+graph <- remesas %>% 
+  dplyr::filter(fecha %in% horas$hour) %>% 
+  ggplot(aes(fecha, num.estratos)) + 
+  geom_bar(stat="identity") +
+    labs(x = "Hora",
+         y = "Número de estratos") +
+    scale_y_continuous(labels = scales::comma,
+                       sec.axis = sec_axis(~ ./350, 
+                                           name = "Porcentaje de estratos",
+                                           labels = porcentaje_small)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+}else{
+  
+  graph <- remesas %>% 
+  dplyr::filter(fecha %in% horas$hour) %>% 
+  dplyr::mutate(num.estratos = num.estratos / 350) %>% 
+  ggplot(aes(fecha, num.estratos)) + 
+  geom_bar(stat="identity") +
+    labs(x = "Hora",
+         y = "Porcentaje de estratos") +
+    scale_y_continuous(labels = porcentaje_small) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+}
+
+
+ggplotly(graph)
+
+
+}), scrollable = TRUE)
+
+
+```
+
+
+
+
+
+### Número de estados
+
+
+
+
+```{r graph.remesas.estados}
+
+miniContentPanel(
+renderPlotly({
+
+# Determina cuáles horas se graficarán
+horas <- tibble(hour = horas.remesas,
+                input = input.remesas)
+hora.selec <- input$remesa
+horas <- horas[1:match(hora.selec, horas$input), ]
+
+
+if(input$tipo == "Absoluto"){
+
+graph <- remesas %>% 
+  dplyr::filter(fecha %in% horas$hour) %>% 
+  ggplot(aes(fecha, num.estados)) + 
+  geom_bar(stat="identity") +
+    labs(x = "Hora",
+         y = "Número de estados") +
+    scale_y_continuous(labels = scales::comma,
+                       sec.axis = sec_axis(~ ./32, 
+                                           name = "Porcentaje de estados",
+                                           labels = porcentaje)) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+}else{
+  
+  graph <- remesas %>% 
+  dplyr::filter(fecha %in% horas$hour) %>% 
+  dplyr::mutate(num.estados = num.estados / 32) %>% 
+  ggplot(aes(fecha, num.estados)) + 
+  geom_bar(stat="identity") +
+    labs(x = "Hora",
+         y = "Porcentaje de estados") +
+    scale_y_continuous(labels = porcentaje_small) +
+    scale_x_discrete(labels = format_fecha) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+}
+
+
+ggplotly(graph)
+
+
+}), scrollable = TRUE)
+
+
+```
