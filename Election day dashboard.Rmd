@@ -1180,6 +1180,48 @@ horas <- horas[1:match(hora.selec, horas$input), ]
 
 
 
+### Biplots
+
+<!-- renderImage({ -->
+
+<!--   filename <- normalizePath(file.path("./Logos/Logo.png")) -->
+
+<!--   list(src = filename, -->
+<!--        width = 756, -->
+<!--        height = 157) -->
+
+<!-- }, deleteFile = FALSE) -->
+
+```{r mendoza.biplots}
+
+renderImage({
+    
+    # Determina cuál gráfica se insertará
+    horas <- tibble(hour = horas.mendoza,
+                    input = input.mendoza)
+    hora.selec <- input$remesa.mendoza
+    horas <- horas[match(hora.selec, horas$input), ] %>% 
+        pull(hour) %>% 
+        as.character()
+    
+    # Importa imagen
+    filename <- normalizePath(file.path(paste0("./Historicos/Biplots/lambdas",
+                                               horas,
+                                               ".png")))
+    
+    # Muestra imagen
+    alpha <- 0.35 # Modifica tamaño biplot
+    list(src = filename,
+         width = 3600*alpha,
+         height = 1410*alpha)
+    
+}, deleteFile = FALSE)
+
+```
+
+
+
+
 
 
 Nieto
