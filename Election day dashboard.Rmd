@@ -2,9 +2,10 @@
 title: "Conteo Rápido de las Elecciones Presidenciales de 2018"
 output: 
   flexdashboard::flex_dashboard:
-    theme: cosmo
+    theme: lumen
     orientation: columns
     vertical_layout: fill
+    source_code: https://github.com/GiankDiluvi/quickcountmx_dashboard
 runtime: shiny
 ---
 

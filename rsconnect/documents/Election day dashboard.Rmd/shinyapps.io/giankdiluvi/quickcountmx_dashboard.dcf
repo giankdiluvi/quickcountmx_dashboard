@@ -1,0 +1,12 @@
+name: quickcountmx_dashboard
+title: quickcountmx_dashboard
+username:
+account: giankdiluvi
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 397448
+bundleId: 3233430
+url: https://giankdiluvi.shinyapps.io/quickcountmx_dashboard/
+when: 1591376041.76427
+asMultiple: FALSE
+asStatic: FALSE
